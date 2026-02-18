@@ -158,8 +158,7 @@ class _WeekRow extends StatelessWidget {
 
         final needsTwoLines = <WeekSegment>{};
         for (final seg in weekSegments) {
-          final isSingleDay =
-              isSameDay(seg.event.start, seg.event.end) && seg.startCol == seg.endCol;
+          final isSingleDay = isSameDay(seg.event.start, seg.event.end) && seg.startCol == seg.endCol;
           if (!isSingleDay) continue;
 
           final availableWidth = (seg.endCol - seg.startCol + 1) * cellWidth - 12;
@@ -169,8 +168,23 @@ class _WeekRow extends StatelessWidget {
             textDirection: TextDirection.ltr,
           )..layout(maxWidth: availableWidth);
 
+          // If the title overflows, only request two lines when it can be wrapped
+          // at a word boundary. If every single word is longer than the available
+          // width, forcing two lines would still break a word mid-word — avoid that.
           if (tp.didExceedMaxLines || tp.width > availableWidth) {
-            needsTwoLines.add(seg);
+            final words = seg.event.title.split(RegExp(r'\s+')).where((w) => w.isNotEmpty);
+            var anyWordFits = false;
+            for (final w in words) {
+              final wtp = TextPainter(
+                text: TextSpan(text: w, style: textStyle),
+                textDirection: TextDirection.ltr,
+              )..layout();
+              if (wtp.width <= availableWidth) {
+                anyWordFits = true;
+                break;
+              }
+            }
+            if (anyWordFits) needsTwoLines.add(seg);
           }
         }
 
