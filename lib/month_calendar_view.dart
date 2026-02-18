@@ -18,7 +18,7 @@ class MonthCalendarView extends StatelessWidget {
     this.dayCellMinHeight = 92,
     this.laneHeight = 18,
     this.laneSpacing = 3,
-    this.eventTextStyleBuilder,
+    this.eventTextStyle,
     this.overflowTextStyle,
     this.dayIndicatorBuilder,
   });
@@ -39,7 +39,7 @@ class MonthCalendarView extends StatelessWidget {
 
   /// Returns a [TextStyle] merged on top of [TextTheme.labelSmall] for a given
   /// event bar. Useful for changing color, weight, etc. per event.
-  final TextStyle? Function(CalendarEvent event)? eventTextStyleBuilder;
+  final TextStyle? eventTextStyle;
 
   /// Override the text style of the "+N" overflow badge.
   /// Merged on top of [TextTheme.labelSmall] via [TextStyle.merge].
@@ -84,7 +84,7 @@ class MonthCalendarView extends StatelessWidget {
             laneHeight: laneHeight,
             laneSpacing: laneSpacing,
             onEventTap: onEventTap,
-            eventTextStyleBuilder: eventTextStyleBuilder,
+            eventTextStyle: eventTextStyle,
             overflowTextStyle: overflowTextStyle,
             dayIndicatorBuilder: dayIndicatorBuilder,
           );
@@ -110,7 +110,7 @@ class _WeekRow extends StatelessWidget {
     required this.laneHeight,
     required this.laneSpacing,
     required this.onEventTap,
-    this.eventTextStyleBuilder,
+    this.eventTextStyle,
     this.overflowTextStyle,
     this.dayIndicatorBuilder,
   });
@@ -129,7 +129,7 @@ class _WeekRow extends StatelessWidget {
   final double laneSpacing;
 
   final ValueChanged<CalendarEvent>? onEventTap;
-  final TextStyle? Function(CalendarEvent event)? eventTextStyleBuilder;
+  final TextStyle? eventTextStyle;
   final TextStyle? overflowTextStyle;
   final Widget Function(DateTime day, bool isInMonth, bool isSelected)? dayIndicatorBuilder;
 
@@ -151,8 +151,9 @@ class _WeekRow extends StatelessWidget {
         // We use TextPainter so we can decide whether to give a segment 2 lanes
         // of height (improving readability) before the layout algorithm runs.
         final textStyle =
+            eventTextStyle ??
             Theme.of(context).textTheme.labelSmall?.copyWith(height: 1.1) ??
-                const TextStyle(fontSize: 12);
+            const TextStyle(fontSize: 12);
 
         final needsTwoLines = <WeekSegment>{};
         for (final seg in weekSegments) {
@@ -221,11 +222,11 @@ class _WeekRow extends StatelessWidget {
                                 child: dayIndicatorBuilder != null
                                     ? dayIndicatorBuilder!(day, isInMonth, isSelected)
                                     : Text(
-                                  '${day.day}',
-                                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                  ),
-                                ),
+                                        '${day.day}',
+                                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                          color: Theme.of(context).colorScheme.onSurface,
+                                        ),
+                                      ),
                               ),
                               const Spacer(),
                               // "+N" overflow badge shown when some events are hidden.
@@ -234,9 +235,13 @@ class _WeekRow extends StatelessWidget {
                                   alignment: Alignment.topRight,
                                   child: Text(
                                     '+${layout.hiddenCountPerCol[col]}',
-                                    style: (Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurface.withAlpha((0.65 * 255).round()),
-                                    ))?.merge(overflowTextStyle) ?? overflowTextStyle,
+                                    style:
+                                        (Theme.of(context).textTheme.labelSmall?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface.withAlpha((0.65 * 255).round()),
+                                        ))?.merge(overflowTextStyle) ??
+                                        overflowTextStyle,
                                   ),
                                 ),
                             ],
@@ -268,7 +273,7 @@ class _WeekRow extends StatelessWidget {
                     continuesRight: seg.continuesRight,
                     onTap: onEventTap == null ? null : () => onEventTap!(seg.event),
                     maxLines: ps.laneSpan,
-                    textStyle: eventTextStyleBuilder?.call(seg.event),
+                    textStyle: eventTextStyle,
                   ),
                 );
               }),
@@ -327,20 +332,19 @@ class _EventBar extends StatelessWidget {
         borderRadius: borderRadius,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 6),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: borderRadius,
-          ),
+          decoration: BoxDecoration(color: bg, borderRadius: borderRadius),
           alignment: Alignment.center,
           child: Text(
             title,
             maxLines: maxLines,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: (Theme.of(context).textTheme.labelSmall?.copyWith(
-              height: 1.1,
-              color: fg.withAlpha((0.85 * 255).round()),
-            ))?.merge(textStyle) ?? textStyle,
+            style:
+                textStyle ??
+                (Theme.of(context).textTheme.labelSmall?.copyWith(
+                  height: 1.1,
+                  color: fg.withAlpha((0.85 * 255).round()),
+                ))?.merge(textStyle),
           ),
         ),
       ),
