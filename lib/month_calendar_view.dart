@@ -67,6 +67,7 @@ class MonthCalendarView extends StatelessWidget {
     }
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         ...List.generate(grid.weeks.length, (weekIndex) {
           final weekDays = grid.weeks[weekIndex];
